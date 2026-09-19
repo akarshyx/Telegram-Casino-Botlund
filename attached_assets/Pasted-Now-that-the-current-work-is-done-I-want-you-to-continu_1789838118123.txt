@@ -1,0 +1,220 @@
+Now that the current work is done, I want you to continue fixing the remaining Rollers Casino issues ONE PART AT A TIME.
+
+Do NOT try to fix everything together. When you touch multiple systems at once, one fix can create another bug.
+
+Follow this exact order.
+
+PART 1 — Balance & money safety
+
+First audit every balance-changing system.
+
+Check:
+
+* Betting
+* Wins
+* Losses
+* Withdrawals
+* Bonuses
+* Referral rewards
+* Refunds
+* Balance deductions
+* Balance credits
+
+Look for:
+
+* Duplicate credits
+* Duplicate payouts
+* Incorrect deductions
+* Negative balances
+* Race conditions
+* Two actions happening at the same time
+* Balance updates being lost
+
+Make the smallest safe fixes possible.
+
+After fixing, test this part completely before moving on.
+
+⸻
+
+PART 2 — Games
+
+Now check the games one by one, not all at once.
+
+For each game check:
+
+* Bet amount
+* Result
+* Win/loss calculation
+* Payout
+* Balance deduction
+* Balance credit
+* Buttons
+* Rapid clicking
+* Multiple simultaneous requests
+* Duplicate rounds
+* Duplicate payouts
+* Game freezing
+* Animation problems
+
+Do NOT change the actual game rules if they are already correct.
+
+Only fix actual bugs.
+
+Finish and test one game before moving to the next.
+
+⸻
+
+PART 3 — Limbo
+
+Specifically test Limbo.
+
+For example:
+
+/limbo 5 5
+
+must mean:
+
+$5 bet at 5x multiplier.
+
+The amount and multiplier must never be swapped.
+
+Test different values and make sure the calculation and payout are correct.
+
+⸻
+
+PART 4 — Concurrency & reliability
+
+Now check what happens when many users interact with the bot at the same time.
+
+Test:
+
+* Multiple users playing simultaneously
+* Rapid button presses
+* Multiple callbacks arriving together
+* Multiple games running together
+* Background tasks running simultaneously
+* Bot restart/recovery
+* Errors inside background tasks
+
+Make sure one user’s action cannot freeze or break another user’s game.
+
+Fix race conditions and task-handling problems without rewriting unrelated systems.
+
+⸻
+
+PART 5 — Buttons & callbacks
+
+Now audit all buttons and navigation.
+
+Check:
+
+* Main menu
+* Back buttons
+* Game buttons
+* Account
+* Profile
+* Promotions
+* Coin-selection buttons
+* Navigation buttons
+* Owner/admin buttons
+
+Fix buttons that:
+
+* Do nothing
+* Trigger the wrong action
+* Have incorrect callback data
+* Stop working after navigating back
+* Disappear unexpectedly
+* Open the wrong menu
+
+Do not redesign the UI.
+
+⸻
+
+PART 6 — Telegram Premium/custom emojis
+
+Now fix the buttons where the intended Telegram Premium/custom emoji is missing.
+
+I want the Premium/custom emojis that are already intended for the buttons.
+
+Do NOT replace them with normal Unicode emojis.
+
+Make sure fixing the emoji does not break the button callback or functionality.
+
+Check every affected button.
+
+⸻
+
+PART 7 — Owner/Admin panel
+
+Now test the owner/admin panel.
+
+Check that existing admin functionality works correctly.
+
+Especially verify the photo management system for:
+
+* Main menu
+* Deposit
+* Bonus
+* Crypto bonus
+* Account/profile
+
+Do not break existing owner commands while fixing this.
+
+⸻
+
+FINAL STEP — COMPLETE BOT CHECK
+
+Only after Parts 1–7 are finished, perform a complete end-to-end regression test of the entire casino.
+
+At this stage, check EVERYTHING together:
+
+* Main menu
+* Navigation
+* Buttons
+* Premium emojis
+* Account/profile
+* Games
+* Limbo
+* Balance
+* Withdrawals
+* Bonuses
+* Referrals
+* Owner panel
+* Background tasks
+* Concurrency
+* Restart/recovery
+* Deposit flow
+* All currently supported deposit coins/networks
+* Deposit detection
+* Processing notification
+* Confirmation notification
+* Correct balance credit
+* Duplicate protection
+
+The final step is only to verify that everything works together after all the other fixes.
+
+Do not start making random changes during the final check.
+
+If you find a problem, identify the exact root cause first and fix only that problem.
+
+IMPORTANT
+
+Always work:
+
+CHECK → FIND ROOT CAUSE → FIX → TEST → VERIFY → NEXT PART
+
+Do not touch multiple unrelated systems at the same time.
+
+At the end of each part, report:
+
+* What was wrong
+* Root cause
+* What you changed
+* What you tested
+* What passed
+* What still needs verification
+
+Do not say something is fixed unless you actually tested it.
+
+Start with PART 1 only.

@@ -1,0 +1,179 @@
+No problem. You don’t need to send me every complaint screenshot. I understand the recurring issue from what you’ve already told me.
+
+Send Replit Agent this as an additional message:
+
+IMPORTANT — USERS ARE STILL COMPLAINING ABOUT THE ANIMATED GAMES
+
+I don’t need a cosmetic change. I need you to treat this as a critical concurrency and reliability problem.
+
+Players are reporting that animated games get stuck/freeze when multiple people play quickly in the group.
+
+The required behavior is:
+
+Player starts → bot rolls quickly → bot finishes → player-turn message appears → player rolls → result is processed immediately → score/result is shown → game continues/finishes.
+
+This must work simultaneously for a large number of players.
+
+Games affected
+
+* Dice
+* Bowling
+* Soccer
+* Basketball
+* Darts
+
+The bot must NOT:
+
+* freeze when many games run simultaneously
+* stop sending rolls
+* get stuck waiting for another player’s game
+* lose fast player rolls
+* process the same roll twice
+* mix one player’s game with another player’s game
+* show incorrect scores
+* leave games permanently stuck
+* crash the entire bot because one game/task fails
+* lose/refuse a refund when a game fails
+
+VERY IMPORTANT
+
+Do a full audit of the current animation/game implementation before changing it.
+
+Find whether the problem is caused by:
+
+* blocking time.sleep()
+* blocking HTTP/API requests
+* Telegram API rate limits
+* too many message edits
+* too many concurrent asyncio tasks
+* race conditions
+* shared global game state
+* database locks
+* database connection pool exhaustion
+* unhandled asyncio exceptions
+* tasks that never finish
+* memory leaks
+* CPU-heavy operations
+* Telegram RetryAfter
+* improper cancellation/timeouts
+* game state being stored only in memory
+
+Fix the actual bottleneck, not just the visible symptom.
+
+CONCURRENCY REQUIREMENT
+
+If 100 players are playing at once, their games must remain independent.
+
+Example:
+
+Player A’s Dice animation is running.
+
+At the same time:
+
+* Player B plays Bowling
+* Player C plays Soccer
+* Player D plays Basketball
+* Player E plays Darts
+* 20 other players start games
+* 30 players send rolls
+* deposits are being processed
+
+None of these should block the others.
+
+Do NOT put the entire bot behind one global lock.
+
+Do NOT create an unlimited number of uncontrolled background tasks either.
+
+Use controlled asynchronous concurrency with proper per-game/per-player state isolation.
+
+FAST TELEGRAM ROLLS
+
+Players can send Telegram dice/animation rolls extremely quickly.
+
+Every incoming update must be handled safely.
+
+If multiple updates arrive almost simultaneously, the bot must atomically determine:
+
+* which game the update belongs to
+* which player sent it
+* whether it is currently their turn
+* whether a roll has already been accepted
+* what the resulting score is
+* what the next game state should be
+
+A single roll must only be accepted once.
+
+ANIMATION
+
+Keep the current visual/game experience and existing messages.
+
+Optimize the implementation so animations don’t block other games.
+
+If unnecessary Telegram message edits are causing rate limits, optimize them intelligently rather than simply making the game slower.
+
+The animation should feel fast and responsive.
+
+asyncio.sleep() is acceptable where needed for animation timing; blocking time.sleep() must not be used inside asynchronous handlers.
+
+CRASH RECOVERY
+
+If an individual game task crashes:
+
+ONE GAME MUST NOT CRASH THE BOT.
+
+Capture the exception, log the game/user/chat/round information, and put that game into a safe recoverable state.
+
+If money was deducted and the game cannot safely continue, the existing refund/recovery system must handle it exactly once.
+
+Never leave a player’s bet permanently stuck because an animation task crashed.
+
+MONEY SAFETY
+
+Every game needs a unique game/round ID.
+
+The financial sequence must be protected:
+
+BET ACCEPTED → BALANCE DEDUCTED → GAME → RESULT → PAYOUT/REFUND → GAME FINISHED
+
+The payout/refund operation must be idempotent.
+
+If the bot crashes after the result but before payout, restarting the bot must allow the system to detect the unfinished transaction and safely recover it.
+
+Never:
+
+* pay twice
+* refund twice
+* lose a player’s bet
+* leave a failed game permanently unresolved
+
+LOAD TESTING
+
+Do not tell me the problem is fixed just because the bot starts successfully.
+
+Test concurrent gameplay.
+
+Simulate high load and rapid inputs, including:
+
+* 10 simultaneous games
+* 50 simultaneous games
+* 100 simultaneous games
+* multiple games in the same group
+* rapid rolls from many players
+* multiple game types simultaneously
+* Telegram API delays
+* Telegram rate limits
+* database delays
+* an individual game task crashing
+* bot restart during an active game
+
+Verify that games continue correctly and that financial transactions remain safe.
+
+FINAL REQUIREMENT
+
+I want the animated games to be designed for high concurrency, not just normal testing.
+
+The goal is:
+
+HIGH LOAD → NO GLOBAL FREEZE → NO GAME MIXING → NO DUPLICATE ROLLS → NO INCORRECT SCORES → NO LOST BETS → NO LOST REFUNDS → NO UNHANDLED CRASHES.
+
+First show me the audit and the exact cause(s) you found. Then implement the fixes and test them.

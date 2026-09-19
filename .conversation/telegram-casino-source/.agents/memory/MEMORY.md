@@ -1,0 +1,1 @@
+- [Deposit notification invariants](deposit-notification-invariants.md) — preserve gross USD through settlement; derive fee-adjusted credit only in the renderer.

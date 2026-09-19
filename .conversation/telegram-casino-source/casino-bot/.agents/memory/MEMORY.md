@@ -1,0 +1,1 @@
+- [Deposit reliability](deposit-reliability.md) — retain deduplication after credit; notification and persistence retries must never replay the balance mutation.

@@ -1,0 +1,396 @@
+I need you to fix the Rollers Casino bot part-by-part and one root cause at a time.
+
+DO NOT try to fix the entire project at once. When multiple systems are changed together, fixing one thing creates new bugs somewhere else.
+
+Pleas look in this please fix everything 1 by 1 dont stop until you fix full properly i think the last replit jas stsrted the eork and fixed the deposit but please recheck 
+
+First inspect the current code and understand the existing architecture and live workflow. Then fix each part, test it completely, and only after it is stable move to the next part.
+
+PART 1 — DEPOSIT SYSTEM — HIGHEST PRIORITY
+
+This is the most serious issue right now.
+
+Do not rewrite the NOWPayments generation system.
+
+NOWPayments should only be responsible for generating the deposit address/payment information and QR.
+
+The bot must handle the actual deposit tracking itself.
+
+Current required flow:
+
+1. User chooses Deposit.
+2. User chooses the coin/network.
+3. Existing NOWPayments flow generates the deposit address/payment information.
+4. Save all required information:
+    * Telegram user ID
+    * generated deposit address
+    * coin
+    * network
+    * expected amount
+    * payment/session ID if available
+    * creation time
+    * expiry time
+5. Start a background watcher for that EXACT generated address.
+6. Monitor the correct blockchain/RPC/API for that coin.
+7. Monitor the address for the valid deposit during the existing 1-hour deposit window.
+8. When a valid transaction is detected, verify:
+    * destination address
+    * coin
+    * network
+    * transaction success
+    * amount
+    * confirmations
+9. As soon as the valid transaction is detected, send the existing Transaction Processing message.
+10. Wait for the required confirmations according to the existing coin logic.
+11. Once confirmed, atomically credit the correct user’s correct coin balance.
+12. Save the transaction hash/payment record in the database.
+13. Prevent the same transaction from ever being credited twice.
+14. Send the existing Deposit Confirmed message.
+15. Make sure the system survives bot/server restart and can recover active deposit watchers from the database.
+
+IMPORTANT DEPOSIT BUGS TO CHECK
+
+The current code has multiple deposit paths.
+
+At least one path appears to create a NOWPayments session but does not consistently retain all the expected amount/network metadata.
+
+Trace the actual live workflow, not just the intended workflow.
+
+Find exactly where information is being lost between:
+
+payment creation → address saved → watcher → blockchain detection → processing notification → confirmation → balance credit
+
+Do not simply add another parallel deposit system.
+
+There should be one reliable path for tracking and crediting deposits.
+
+Small amount bug
+
+Fix the rounding issue where a confirmed payment such as a very small amount could be rounded to $0.00 and therefore result in no credit.
+
+Use appropriate precision internally.
+
+Do not allow display/fiat rounding to destroy the actual crypto amount used for crediting.
+
+Duplicate protection
+
+The same blockchain transaction must NEVER credit a user twice.
+
+Use the transaction hash/payment identifier and database state properly.
+
+The credit + transaction record must be handled safely/atomically so a crash cannot cause a duplicate credit.
+
+Restart recovery
+
+If the bot/server restarts while a user’s deposit is still active:
+
+* The deposit must not be forgotten.
+* The watcher must recover from the database.
+* The remaining expiry time must be respected.
+* A previously confirmed transaction must not be credited again.
+
+IMPORTANT
+
+For Part 1:
+
+Do NOT change:
+
+* NOWPayments address generation
+* QR generation
+* Existing deposit UI
+* Existing unrelated UI
+* Game logic
+* Promotions
+* Unrelated commands
+
+Only fix:
+
+tracking → detection → processing notification → confirmation → crediting → recovery
+
+First inspect the existing implementation and logs.
+
+Then fix it.
+
+Test the entire deposit flow before moving to Part 2.
+
+⸻
+
+PART 2 — DEPOSIT COIN / NETWORK CORRECTNESS
+
+After Part 1 is stable, test every supported deposit coin individually.
+
+Make sure a deposit for Coin A can NEVER be credited as Coin B.
+
+Verify:
+
+user → session → address → coin → network → transaction → balance
+
+must remain connected throughout the entire workflow.
+
+Do not create duplicate coin systems.
+
+TON must continue using the existing backend.
+
+Where the UI says TON, use TON / GRAM where required, but do not create a new TON backend.
+
+⸻
+
+PART 3 — BALANCE SAFETY
+
+After deposits are stable, audit every balance-changing operation.
+
+Check:
+
+* Deposit credits
+* Game bets
+* Game wins
+* Losses
+* Refunds
+* Bonuses
+* Referral rewards
+* Withdrawals
+
+Look specifically for race conditions and duplicate operations.
+
+Two simultaneous requests must not be able to spend or credit the same balance incorrectly.
+
+Do not rewrite working game calculations unnecessarily.
+
+Preserve the existing game rules and payout logic.
+
+⸻
+
+PART 4 — GAME RELIABILITY / RAPID CLICKS
+
+Audit the games one by one.
+
+Check for:
+
+* Double clicks
+* Rapid button presses
+* Duplicate game rounds
+* Duplicate payouts
+* Missing payouts
+* Incorrect balance deductions
+* Multiple handlers processing the same action
+* Background task duplication
+* Animation loops that never stop
+* Games freezing the bot
+* Results repeating incorrectly
+
+The server must remain authoritative.
+
+Animations should never determine the actual game result.
+
+Fix concurrency problems without changing the intended game mechanics.
+
+Test games with rapid repeated interactions.
+
+⸻
+
+PART 5 — LIMBO
+
+Specifically verify the Limbo command/input.
+
+Example:
+
+/limbo 5 5
+
+must always mean:
+
+Bet = 5
+Multiplier = 5x
+
+The amount and multiplier must NEVER be swapped.
+
+Test several different combinations.
+
+Do not change the intended Limbo calculation itself unless you find an actual bug.
+
+⸻
+
+PART 6 — BACKGROUND TASKS / SCHEDULER
+
+Audit the scheduler and background watchers.
+
+Especially the deposit watcher.
+
+Make sure:
+
+* One deposit does not create unlimited watchers.
+* Restart recovery does not create duplicate watchers.
+* Finished/expired deposits stop their watchers.
+* Exceptions do not silently kill the watcher.
+* One user’s watcher cannot freeze unrelated users.
+* Scheduler jobs are cleaned up correctly.
+
+The exact-address monitor needs to be properly wired into the scheduler.
+
+Startup recovery should use the same reliable monitoring path instead of having a separate broken implementation.
+
+⸻
+
+PART 7 — BROKEN BUTTONS / CALLBACKS
+
+Once the backend/core systems are stable, audit all buttons.
+
+There are buttons that currently:
+
+* Do nothing
+* Have broken callbacks
+* Return to the wrong place
+* Don’t show the intended emoji
+* Stop working after navigating through menus
+* Work once but fail after returning/back
+
+Check:
+
+* Main menu
+* Deposit
+* Coin selection
+* Back buttons
+* Games
+* Account
+* Promotions
+* Profile
+* Owner/admin buttons
+
+Fix the actual callback/handler problem.
+
+Do not redesign the UI.
+
+⸻
+
+PART 8 — TELEGRAM PREMIUM / CUSTOM EMOJIS
+
+This is specifically important.
+
+Some buttons are missing their intended emoji.
+
+I want the Telegram Premium/custom emojis on the buttons.
+
+Do NOT replace them with ordinary Unicode emojis just because that is easier.
+
+Check how the existing custom/premium emoji data is being passed into Telegram buttons and why it is not rendering.
+
+Make sure the emoji is attached correctly while preserving the button’s existing callback behavior.
+
+Test every affected button.
+
+Do not change the overall Rollers Casino visual style.
+
+⸻
+
+PART 9 — OWNER / ADMIN FUNCTIONS
+
+After the user-facing systems are stable, test the owner/admin functions.
+
+Existing owner functionality should continue working.
+
+Pay particular attention to the photo management system for:
+
+* Main menu
+* Deposit
+* Bonus
+* Crypto bonus
+* Account/profile
+
+Do not break existing admin commands while fixing these.
+
+⸻
+
+PART 10 — FINAL REGRESSION TEST
+
+After all individual parts are complete, perform a full regression test.
+
+Test:
+
+User flow
+
+* New user
+* Existing user
+* Main menu
+* Navigation
+* Back buttons
+
+Deposit
+
+* Coin selection
+* Address generation
+* QR
+* Exact-address monitoring
+* Transaction detection
+* Processing notification
+* Confirmations
+* Correct balance credit
+* Duplicate transaction
+* Expired payment
+* Small amount
+* Bot restart during active deposit
+
+Games
+
+* Normal game
+* Rapid clicks
+* Multiple users simultaneously
+* Multiple games simultaneously
+* Balance deduction
+* Win
+* Loss
+* Payout
+
+UI
+
+* All buttons
+* Premium/custom emojis
+* Back buttons
+* Menus
+* Account
+* Promotions
+
+Admin
+
+* Owner panel
+* Photo management
+* Existing admin commands
+
+⸻
+
+VERY IMPORTANT DEVELOPMENT RULE
+
+Work exactly like this:
+
+AUDIT → IDENTIFY ROOT CAUSE → FIX ONE PART → TEST → VERIFY → MOVE TO NEXT PART
+
+Do NOT touch five unrelated systems at once.
+
+If you discover another bug while working on the current part, document it and leave it for its correct priority unless it directly prevents the current part from working.
+
+Before modifying code:
+
+1. Identify the relevant files/functions.
+2. Trace the actual execution path.
+3. Find the root cause.
+4. Make the smallest safe change.
+5. Test the change.
+6. Test the surrounding workflow.
+7. Confirm nothing unrelated broke.
+8. Only then move to the next part.
+
+Do not rewrite working systems just because they could be coded differently.
+
+At the end of EVERY part, report:
+
+What was wrong
+Root cause
+Files/functions changed
+What was fixed
+What was tested
+What passed
+What is still unverified
+
+Do not tell me something is fixed unless you actually tested it.
+
+Start with PART 1 — DEPOSIT SYSTEM.
+
+Do not start changing the UI or games before the deposit tracking/crediting problem is properly traced and fixed.
